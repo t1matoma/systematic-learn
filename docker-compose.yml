@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: roadmap_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: roadmap_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d roadmap_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: roadmap_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/roadmap_db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/code
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo '⏳ Waiting for PostgreSQL...' &&
+        sleep 10 &&
+        echo '📦 Creating database tables...' &&
+        python -c 'from app.database import Base, engine; Base.metadata.create_all(bind=engine)' &&
+        echo '🚀 Starting FastAPI server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    build:
+      context: ./roadmap-frontend
+      dockerfile: Dockerfile
+    container_name: roadmap_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./roadmap-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

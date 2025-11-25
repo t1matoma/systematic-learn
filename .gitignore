@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.log
+
+# Virtual env
+venv/
+.venv/
+
+# Byte-compiled
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+
+# Docker
+docker-compose.override.yml
+*.pid
+
+# VSCode
+.vscode/
+
+# Frontend (Node)
+node_modules/
+roadmap-frontend/node_modules/
+roadmap-frontend/.parcel-cache/
+roadmap-frontend/dist/
+roadmap-frontend/.next/
+roadmap-frontend/out/
+
+# pytest
+.pytest_cache/
+
+# Other
+.DS_Store
