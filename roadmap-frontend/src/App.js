@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Plus, ArrowLeft, BookOpen, Target, Award } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';;
+const API_BASE = 'http://localhost:8000';
 
 function App() {
-  const [view, setView] = useState('roadmaps'); // roadmaps, steps, tasks, test
+  const [view, setView] = useState('roadmaps'); // roadmaps, steps, tasks, test, results
   const [roadmaps, setRoadmaps] = useState([]);
   const [steps, setSteps] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -13,6 +13,7 @@ function App() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [currentTest, setCurrentTest] = useState(null);
   const [userAnswers, setUserAnswers] = useState({});
+  const [testResults, setTestResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [newRoadmapTitle, setNewRoadmapTitle] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -141,19 +142,12 @@ function App() {
       });
       const result = await response.json();
       
-      if (result.passed) {
-        alert(`Congratulations! You passed the test (${result.correct}/${result.total_questions})`);
-        await fetchRoadmaps();
-        setView('roadmaps');
-        setCurrentTest(null);
-        setSelectedTask(null);
-        setSelectedStep(null);
-        setSelectedRoadmap(null);
-      } else {
-        alert(`Test failed (${result.correct}/${result.total_questions}). You need at least 70% correct answers.`);
-        setView('tasks');
-        setCurrentTest(null);
-      }
+      // Save results and show results screen
+      setTestResults(result);
+      setView('results');
+      
+      // Refresh roadmaps to update percentage
+      await fetchRoadmaps();
     } catch (error) {
       console.error('Error submitting test:', error);
     } finally {
@@ -162,7 +156,14 @@ function App() {
   };
 
   const goBack = () => {
-    if (view === 'test') {
+    if (view === 'results') {
+      setView('roadmaps');
+      setTestResults(null);
+      setCurrentTest(null);
+      setSelectedTask(null);
+      setSelectedStep(null);
+      setSelectedRoadmap(null);
+    } else if (view === 'test') {
       setView('tasks');
       setCurrentTest(null);
     } else if (view === 'tasks') {
@@ -196,6 +197,7 @@ function App() {
                 {view === 'steps' && selectedRoadmap?.title}
                 {view === 'tasks' && selectedStep?.title}
                 {view === 'test' && 'Knowledge Check'}
+                {view === 'results' && 'Test Results'}
               </h1>
             </div>
             {view === 'roadmaps' && selectedRoadmap && (
@@ -424,6 +426,116 @@ function App() {
             >
               Submit Answers
             </button>
+          </div>
+        )}
+
+        {/* Test Results View */}
+        {view === 'results' && !loading && testResults && (
+          <div className="max-w-4xl mx-auto">
+            {/* Results Summary */}
+            <div className={`rounded-xl shadow-lg p-8 mb-6 ${
+              testResults.passed 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                : 'bg-gradient-to-r from-red-500 to-pink-500'
+            }`}>
+              <div className="text-center text-white">
+                <div className="text-6xl font-bold mb-4">
+                  {testResults.passed ? '🎉' : '😔'}
+                </div>
+                <h2 className="text-3xl font-bold mb-2">
+                  {testResults.passed ? 'Congratulations!' : 'Not Quite There'}
+                </h2>
+                <p className="text-xl mb-4">
+                  You scored {testResults.correct} out of {testResults.total_questions}
+                </p>
+                <div className="text-4xl font-bold">
+                  {Math.round((testResults.correct / testResults.total_questions) * 100)}%
+                </div>
+                <p className="mt-2 text-lg opacity-90">
+                  {testResults.passed 
+                    ? 'Great job! You passed the test!' 
+                    : 'You need at least 70% to pass. Keep studying!'}
+                </p>
+              </div>
+            </div>
+
+            {/* Detailed Results */}
+            <div className="space-y-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">Review Your Answers</h3>
+              
+              {testResults.details.map((detail, index) => (
+                <div
+                  key={detail.question_id}
+                  className={`bg-white rounded-xl shadow-md p-6 border-2 ${
+                    detail.is_correct 
+                      ? 'border-green-300 bg-green-50' 
+                      : 'border-red-300 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                      detail.is_correct ? 'bg-green-500' : 'bg-red-500'
+                    }`}>
+                      {detail.is_correct ? '✓' : '✗'}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                        Question {detail.question_id}: {detail.question}
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <div className={`p-3 rounded-lg ${
+                          detail.user_answer === detail.right_answer 
+                            ? 'bg-green-100 border-2 border-green-500' 
+                            : 'bg-red-100 border-2 border-red-500'
+                        }`}>
+                          <span className="font-medium text-gray-700">Your answer: </span>
+                          <span className="font-semibold">{detail.user_answer || 'Not answered'}</span>
+                        </div>
+                        
+                        {!detail.is_correct && (
+                          <div className="p-3 rounded-lg bg-green-100 border-2 border-green-500">
+                            <span className="font-medium text-gray-700">Correct answer: </span>
+                            <span className="font-semibold text-green-700">{detail.right_answer}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={() => {
+                  setView('roadmaps');
+                  setTestResults(null);
+                  setCurrentTest(null);
+                  setSelectedTask(null);
+                  setSelectedStep(null);
+                  setSelectedRoadmap(null);
+                }}
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl font-medium text-lg"
+              >
+                Back to Roadmaps
+              </button>
+              
+              {!testResults.passed && (
+                <button
+                  onClick={() => {
+                    setView('tasks');
+                    setTestResults(null);
+                    setCurrentTest(null);
+                  }}
+                  className="flex-1 bg-white text-indigo-600 border-2 border-indigo-600 px-6 py-4 rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl font-medium text-lg"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
