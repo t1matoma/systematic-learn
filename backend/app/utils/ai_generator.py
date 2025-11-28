@@ -19,10 +19,15 @@ class AIGenerator:
           "3": "Step 3 name",
           "4": "Step 4 name",
           "5": "Step 5 name"
+          "6": "Step 6 name",
+          "7": "Step 7 name",
+          "8": "Step 8 name",
+          "9": "Step 9 name",
+          "10": "Step 10 name"
         }}
         
         Rules:
-        - Exactly 5 steps
+        - Exactly 10 steps
         - Progress from beginner to advanced
         - Each step should be a clear learning milestone
         - No markdown, no explanations, ONLY JSON
@@ -31,9 +36,7 @@ class AIGenerator:
         {{
           "1": "HTML & CSS Fundamentals",
           "2": "JavaScript Basics",
-          "3": "Frontend Framework (React)",
-          "4": "Backend Development (Node.js)",
-          "5": "Full-Stack Project"
+          ...continue
         }}
         """
         
