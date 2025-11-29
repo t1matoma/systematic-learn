@@ -463,48 +463,94 @@ function App() {
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-gray-800 mb-4">Review Your Answers</h3>
               
-              {testResults.details.map((detail, index) => (
-                <div
-                  key={detail.question_id}
-                  className={`bg-white rounded-xl shadow-md p-6 border-2 ${
-                    detail.is_correct 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-red-300 bg-red-50'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                      detail.is_correct ? 'bg-green-500' : 'bg-red-500'
-                    }`}>
-                      {detail.is_correct ? '✓' : '✗'}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-800 mb-3">
-                        Question {detail.question_id}: {detail.question}
-                      </h4>
+              {testResults.details.map((detail, index) => {
+                // Extract letter from option (e.g., "A) Text" -> "A")
+                const getOptionLetter = (option) => option.trim().charAt(0);
+                
+                return (
+                  <div
+                    key={detail.question_id}
+                    className={`bg-white rounded-xl shadow-md p-6 border-2 ${
+                      detail.is_correct 
+                        ? 'border-green-300' 
+                        : 'border-red-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                        detail.is_correct ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
+                        {detail.is_correct ? '✓' : '✗'}
+                      </div>
                       
-                      <div className="space-y-2">
-                        <div className={`p-3 rounded-lg ${
-                          detail.user_answer === detail.right_answer 
-                            ? 'bg-green-100 border-2 border-green-500' 
-                            : 'bg-red-100 border-2 border-red-500'
-                        }`}>
-                          <span className="font-medium text-gray-700">Your answer: </span>
-                          <span className="font-semibold">{detail.user_answer || 'Not answered'}</span>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                          Question {detail.question_id}: {detail.question}
+                        </h4>
+                        
+                        {/* All Answer Options */}
+                        <div className="space-y-2 mb-4">
+                          {detail.options && detail.options.map((option, idx) => {
+                            const optionLetter = getOptionLetter(option);
+                            const isUserAnswer = detail.user_answer === optionLetter;
+                            const isCorrectAnswer = detail.right_answer === optionLetter;
+                            
+                            let bgColor = 'bg-gray-50';
+                            let borderColor = 'border-gray-200';
+                            let textColor = 'text-gray-700';
+                            
+                            if (isCorrectAnswer) {
+                              bgColor = 'bg-green-100';
+                              borderColor = 'border-green-500';
+                              textColor = 'text-green-800';
+                            } else if (isUserAnswer && !isCorrectAnswer) {
+                              bgColor = 'bg-red-100';
+                              borderColor = 'border-red-500';
+                              textColor = 'text-red-800';
+                            }
+                            
+                            return (
+                              <div
+                                key={idx}
+                                className={`p-3 rounded-lg border-2 ${bgColor} ${borderColor} ${textColor} flex items-center justify-between`}
+                              >
+                                <span className="font-medium">{option}</span>
+                                <div className="flex gap-2">
+                                  {isUserAnswer && (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-500 text-white font-semibold">
+                                      Your Answer
+                                    </span>
+                                  )}
+                                  {isCorrectAnswer && (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-green-600 text-white font-semibold">
+                                      ✓ Correct
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                         
-                        {!detail.is_correct && (
-                          <div className="p-3 rounded-lg bg-green-100 border-2 border-green-500">
-                            <span className="font-medium text-gray-700">Correct answer: </span>
-                            <span className="font-semibold text-green-700">{detail.right_answer}</span>
+                        {/* Summary */}
+                        {detail.is_correct ? (
+                          <div className="p-3 rounded-lg bg-green-50 border-l-4 border-green-500">
+                            <p className="text-green-800 font-medium">
+                              ✓ Correct! You selected the right answer.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="p-3 rounded-lg bg-red-50 border-l-4 border-red-500">
+                            <p className="text-red-800 font-medium">
+                              ✗ Incorrect. The correct answer was <span className="font-bold">{detail.right_answer}</span>.
+                            </p>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Action Buttons */}
