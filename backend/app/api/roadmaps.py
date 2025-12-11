@@ -4,7 +4,7 @@ from typing import List
 
 from app.database import get_db
 from app.services.roadmap_service import RoadmapService
-from app.schemas.roadmap import SRoadmap
+from app.schemas.roadmap import SRoadmap, RoadmapCreate
 
 router = APIRouter(prefix="/roadmaps", tags=["roadmaps"])
 
@@ -15,8 +15,8 @@ def get_roadmaps(db: Session = Depends(get_db)):
 
 @router.post("", response_model=SRoadmap)
 def create_roadmap(
-    message: str = Query(..., description="Roadmap topic"),
+    data: RoadmapCreate,
     db: Session = Depends(get_db)
 ):
     service = RoadmapService(db)
-    return service.create_roadmap(message)
+    return service.create_roadmap(data.title)
